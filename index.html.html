@@ -25,7 +25,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .nav-links{list-style:none;display:flex;gap:28px;align-items:center}
 .nav-links a{text-decoration:none;color:var(--tan);font-size:0.82rem;font-weight:500;
   letter-spacing:0.08em;text-transform:uppercase;transition:color 0.2s;cursor:pointer}
-.nav-links a:hover,.nav-links a.active{color:var(--gold)}
+.nav-links a:hover,.nav-links a.active{color:var(--gold);border-bottom:2px solid var(--gold);padding-bottom:2px}
 .nav-shop-btn{background:var(--gold);color:var(--brown);border:none;padding:7px 18px;
   border-radius:4px;font-size:0.8rem;font-weight:700;letter-spacing:0.08em;
   text-transform:uppercase;cursor:pointer;transition:background 0.2s}
@@ -191,13 +191,30 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .form-note{font-size:0.75rem;color:var(--mid);text-align:center;margin-top:10px}
 
 /* ── GALLERY ── */
-.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
-  gap:10px;margin-top:20px}
-.gal-item{border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer}
+.gallery-wrap{position:relative;margin-top:20px}
+.gallery-grid{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;padding-bottom:12px;scrollbar-width:none}
+.gallery-grid::-webkit-scrollbar{display:none}
+.gal-item{flex:0 0 260px;height:260px;border-radius:8px;overflow:hidden;
+  cursor:pointer;scroll-snap-align:start;position:relative}
 .gal-item img{width:100%;height:100%;object-fit:cover;transition:transform 0.3s}
 .gal-item:hover img{transform:scale(1.05)}
 .gal-empty{text-align:center;padding:40px;color:var(--mid);font-size:0.88rem;
   border:1px dashed rgba(200,134,10,0.2);border-radius:8px}
+.gal-nav{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.gal-arrow{background:rgba(200,134,10,0.15);border:1px solid rgba(200,134,10,0.3);
+  color:var(--gold);width:38px;height:38px;border-radius:50%;cursor:pointer;
+  font-size:1.1rem;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;flex-shrink:0}
+.gal-arrow:hover{background:var(--gold);color:var(--brown)}
+.gal-dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex:1;padding:0 12px}
+.gal-dot{width:7px;height:7px;border-radius:50%;background:rgba(200,134,10,0.25);
+  cursor:pointer;transition:background 0.2s;flex-shrink:0}
+.gal-dot.active{background:var(--gold)}
+.gal-counter{font-size:0.78rem;color:var(--mid);white-space:nowrap}
+@media(max-width:600px){
+  .gal-item{flex:0 0 85vw;height:85vw}
+}
 
 /* ── STORY ── */
 .story-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
@@ -393,8 +410,16 @@ footer{background:#0E0500;padding:36px 24px 24px;
     <div class="container">
       <div class="eyebrow">Gallery</div>
       <h2 class="sec-title">From our factory</h2>
-      <div class="gallery-grid" id="gallery-grid">
-        <div class="gal-empty" style="grid-column:1/-1">Photos coming soon.</div>
+      <div class="gallery-wrap">
+        <div class="gallery-grid" id="gallery-grid">
+          <div class="gal-empty">Photos coming soon.</div>
+        </div>
+        <div class="gal-nav" id="gal-nav" style="display:none">
+          <button class="gal-arrow" onclick="galScroll(-1)">&#8592;</button>
+          <div class="gal-dots" id="gal-dots"></div>
+          <span class="gal-counter" id="gal-counter"></span>
+          <button class="gal-arrow" onclick="galScroll(1)">&#8594;</button>
+        </div>
       </div>
     </div>
   </section>
@@ -461,7 +486,7 @@ footer{background:#0E0500;padding:36px 24px 24px;
       <div style="margin-top:36px;text-align:center">
         <p style="font-size:0.85rem;color:var(--tan);margin-bottom:12px">Want to order multiple products or have a special request?</p>
         <a class="wa-btn" style="display:inline-flex;width:auto;padding:12px 28px"
-          href="https://wa.me/2348XXXXXXXXX?text=Hello%20Mbegu%20Flavours%2C%20I%20would%20like%20to%20place%20a%20custom%20order."
+          href="https://wa.me/2348164083309?text=Hello%20Mbegu%20Flavours%2C%20I%20would%20like%20to%20place%20a%20custom%20order."
           target="_blank" rel="noopener">
           <svg class="wa-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           Chat with us on WhatsApp
@@ -558,7 +583,7 @@ footer{background:#0E0500;padding:36px 24px 24px;
       <a onclick="showPage('dist')">Distributors</a>
       <a onclick="showPage('home');setTimeout(()=>document.getElementById('story-sec').scrollIntoView({behavior:'smooth'}),200)">Our Story</a>
     </div>
-    <a class="footer-wa" href="https://wa.me/2348XXXXXXXXX?text=Hello%20Mbegu%20Flavours!" target="_blank" rel="noopener">
+    <a class="footer-wa" href="https://wa.me/2348164083309?text=Hello%20Mbegu%20Flavours!" target="_blank" rel="noopener">
       <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       WhatsApp Us
     </a>
@@ -656,9 +681,9 @@ footer{background:#0E0500;padding:36px 24px 24px;
         <!-- GALLERY -->
         <div class="adm-sec" id="adm-gallery">
           <h4 style="color:var(--gold);font-size:0.9rem;margin-bottom:12px">Gallery Photos</h4>
-          <div class="upload-area" onclick="document.getElementById('gal-in').click()">
-            <input type="file" id="gal-in" accept="image/*" multiple style="display:none" onchange="uploadGallery(this)"/>
-            📸 Upload photos (multiple allowed, max 2MB each)
+          <div class="upload-area" id="gal-upload-area" onclick="document.getElementById('gal-in').click()">
+            <input type="file" id="gal-in" accept="image/*" multiple style="display:none"/>
+            📸 Click to upload photos (multiple allowed)
           </div>
           <div id="gal-adm-grid" class="img-grid" style="margin-top:10px"></div>
           <div id="gal-ok" class="ok-msg"></div>
@@ -675,8 +700,26 @@ footer{background:#0E0500;padding:36px 24px 24px;
 </div>
 
 <script>
-const WA = "2348XXXXXXXXX";
+const WA = "2348164083309";
 const ADMIN_PW = "mbegu2026";
+const CLOUD_NAME = "dyweczdw2";
+const UPLOAD_PRESET = "mbegu_uploads";
+
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", UPLOAD_PRESET);
+  fd.append("folder", "mbegu_flavours");
+  console.log("Sending to Cloudinary — cloud:", CLOUD_NAME, "preset:", UPLOAD_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: "POST", body: fd
+  });
+  const data = await res.json();
+  console.log("Cloudinary response:", data);
+  if(data.error) throw new Error(data.error.message);
+  if(!data.secure_url) throw new Error("No URL returned from Cloudinary");
+  return data.secure_url;
+}
 
 const PRODUCTS = [
   {id:"psi0", name:"Mbegu Pepper Soup Spice", sub:"Authentic Nigerian Pepper Soup Blend",
@@ -704,11 +747,44 @@ const PRODUCTS = [
 let site = {promo:"", discounts:[], offers:[], gallery:[], prodImgs:{}, prices:{}};
 
 async function loadSite() {
-  try { const r = await window.storage.get("mbegu-site-v2"); if(r) site = JSON.parse(r.value); } catch(e){}
+  await loadShared();
   applyPromo(); renderOffers(); renderGallery(); buildProductGrids(); buildPriceFields();
 }
+const JSONBIN_ID = "6a6388a5da38895dfe8a7fdc";
+const JSONBIN_KEY = "$2a$10$mvTPBcILzPbUJBIIvDWlQuPwTUSQ7e.2GxTobgSV6KllDhJLwyB2.";
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
+const JSONBIN_HEADERS = {
+  "Content-Type": "application/json",
+  "X-Master-Key": JSONBIN_KEY,
+  "X-Bin-Versioning": "false"
+};
+
 async function saveSite() {
-  try { await window.storage.set("mbegu-site-v2", JSON.stringify(site)); } catch(e){}
+  try {
+    await fetch(JSONBIN_URL, {
+      method: "PUT",
+      headers: JSONBIN_HEADERS,
+      body: JSON.stringify(site)
+    });
+  } catch(e) { console.error("Save failed:", e); }
+}
+
+async function loadShared() {
+  try {
+    const res = await fetch(JSONBIN_URL, { headers: JSONBIN_HEADERS });
+    const data = await res.json();
+    if(data.record) {
+      const defaults = {promo:"", discounts:[], offers:[], gallery:[], productImgs:{}, prices:{}};
+      site = Object.assign(defaults, data.record);
+      if(!site.prices) site.prices = {};
+      if(!site.productImgs) site.productImgs = {};
+      if(!site.gallery) site.gallery = [];
+      if(!site.offers) site.offers = [];
+      if(!site.discounts) site.discounts = [];
+      return true;
+    }
+  } catch(e) { console.error("Load failed:", e); }
+  return false;
 }
 
 function applyPromo() {
@@ -742,11 +818,17 @@ function renderCodes() {
 }
 
 let pendingOfferImg=null;
-function previewOfferImg(inp) {
-  const f=inp.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=e=>{ pendingOfferImg=e.target.result;
-    document.getElementById("so-img-prev").innerHTML=`<img src="${e.target.result}" style="width:100%;max-height:140px;object-fit:cover;border-radius:4px;margin-top:6px"/>`;
-  }; r.readAsDataURL(f);
+async function previewOfferImg(inp) {
+  const f = inp.files[0]; if(!f) return;
+  const prev = document.getElementById("so-img-prev");
+  prev.innerHTML = `<p style="color:var(--gold);font-size:0.82rem;margin-top:6px">Uploading to Cloudinary...</p>`;
+  try {
+    const url = await uploadToCloudinary(f);
+    pendingOfferImg = url;
+    prev.innerHTML = `<img src="${url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:4px;margin-top:6px"/>`;
+  } catch(e) {
+    prev.innerHTML = `<p style="color:#FF6040;font-size:0.82rem;margin-top:6px">Upload failed. Try again.</p>`;
+  }
 }
 function addOffer() {
   const title=document.getElementById("so-title").value.trim(); if(!title) return;
@@ -783,6 +865,7 @@ function renderOffersAdm() {
 }
 
 function getPrice(prodId,size) {
+  if(!site.prices) site.prices = {};
   return site.prices[prodId+"_"+size] || PRODUCTS.find(p=>p.id===prodId)?.prices[size] || "";
 }
 
@@ -833,6 +916,7 @@ function waOrderLink(prodId) {
 }
 
 function buildProductCard(p, forShop=false) {
+  if(!site.prices) site.prices = {};
   const price50=getPrice(p.id,"50g"), price100=getPrice(p.id,"100g");
   const hasImg=site.prodImgs[p.id];
   return `<div class="prod-card ${p.theme}">
@@ -878,27 +962,94 @@ function buildProdImgFields() {
       </div>
     </div>`).join("");
 }
-function uploadProdImg(inp,id) {
-  const f=inp.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=e=>{ site.prodImgs[id]=e.target.result; saveSite(); buildProductGrids(); buildProdImgFields(); }; r.readAsDataURL(f);
+async function uploadProdImg(inp, id) {
+  const f = inp.files[0]; if(!f) return;
+  const area = inp.closest ? inp.closest("div") : null;
+  const okEl = document.getElementById("gal-ok");
+  try {
+    if(area) area.textContent = "Uploading...";
+    const url = await uploadToCloudinary(f);
+    site.prodImgs[id] = url;
+    saveSite(); buildProductGrids(); buildProdImgFields();
+  } catch(e) { alert("Upload failed. Check internet and try again."); if(area) area.textContent = "📸 Upload product image"; }
 }
 
-function uploadGallery(inp) {
-  const files=Array.from(inp.files); let done=0;
-  const valid=files.filter(f=>f.size<=2*1024*1024);
-  if(valid.length<files.length) alert("Some files skipped — max 2MB each.");
-  valid.forEach(f=>{ const r=new FileReader(); r.onload=e=>{
-    site.gallery.push({id:Date.now()+done,src:e.target.result,name:f.name}); done++;
-    if(done===valid.length){ saveSite(); renderGallery(); renderGalleryAdm();
-      document.getElementById("gal-ok").textContent=`✓ ${done} photo(s) uploaded`;
-      setTimeout(()=>document.getElementById("gal-ok").textContent="",2000); }
-  }; r.readAsDataURL(f); });
+async function uploadGallery(inp) {
+  const files = Array.from(inp.files);
+  if(!files.length) return;
+  const okEl = document.getElementById("gal-ok");
+  const area = document.getElementById("gal-upload-area");
+  okEl.style.color = "#C8860A";
+  okEl.textContent = `Uploading ${files.length} photo(s) to Cloudinary...`;
+  if(area) area.textContent = "Uploading — please wait...";
+  let done = 0;
+  for(const f of files) {
+    try {
+      console.log("Uploading to Cloudinary:", f.name, f.size);
+      const url = await uploadToCloudinary(f);
+      console.log("Success:", url);
+      site.gallery.push({id: Date.now()+done, src: url, name: f.name});
+      done++;
+      okEl.textContent = `Uploaded ${done} of ${files.length}...`;
+    } catch(e) {
+      console.error("Upload failed for:", f.name, e);
+      okEl.style.color = "#FF6040";
+      okEl.textContent = `Upload failed: ${e.message}. Check console for details.`;
+    }
+  }
+  saveSite(); renderGallery(); renderGalleryAdm();
+  if(area) area.textContent = "📸 Click to upload photos (multiple allowed)";
+  if(done > 0) {
+    okEl.style.color = "#4CAF7D";
+    okEl.textContent = `✓ ${done} photo(s) saved to Cloudinary permanently`;
+  }
+  setTimeout(() => okEl.textContent = "", 5000);
+  inp.value = "";
 }
 function deleteGalleryImg(id) { site.gallery=site.gallery.filter(g=>g.id!==id); saveSite(); renderGallery(); renderGalleryAdm(); }
 function renderGallery() {
-  const el=document.getElementById("gallery-grid");
-  if(!site.gallery.length){el.innerHTML=`<div class="gal-empty" style="grid-column:1/-1">Photos coming soon.</div>`;return;}
-  el.innerHTML=site.gallery.map(g=>`<div class="gal-item" onclick="openLightbox('${g.src}')"><img src="${g.src}" alt="${g.name}" loading="lazy"/></div>`).join("");
+  const el = document.getElementById("gallery-grid");
+  const nav = document.getElementById("gal-nav");
+  const dots = document.getElementById("gal-dots");
+  const counter = document.getElementById("gal-counter");
+  if(!site.gallery.length) {
+    el.innerHTML = `<div class="gal-empty">Photos coming soon.</div>`;
+    if(nav) nav.style.display = "none";
+    return;
+  }
+  el.innerHTML = site.gallery.map((g,i) =>
+    `<div class="gal-item" onclick="openLightbox('${g.src}')">
+      <img src="${g.src}" alt="${g.name}" loading="lazy"/>
+    </div>`
+  ).join("");
+  if(nav) nav.style.display = "flex";
+  if(dots) dots.innerHTML = site.gallery.map((_,i) =>
+    `<div class="gal-dot${i===0?' active':''}" onclick="galGoTo(${i})"></div>`
+  ).join("");
+  if(counter) counter.textContent = `1 / ${site.gallery.length}`;
+  el.addEventListener("scroll", updateGalNav, {passive:true});
+}
+
+function galScroll(dir) {
+  const el = document.getElementById("gallery-grid");
+  const itemW = el.querySelector(".gal-item")?.offsetWidth || 260;
+  el.scrollBy({left: dir * (itemW + 12), behavior:"smooth"});
+}
+
+function galGoTo(i) {
+  const el = document.getElementById("gallery-grid");
+  const itemW = el.querySelector(".gal-item")?.offsetWidth || 260;
+  el.scrollTo({left: i * (itemW + 12), behavior:"smooth"});
+}
+
+function updateGalNav() {
+  const el = document.getElementById("gallery-grid");
+  const dots = document.querySelectorAll(".gal-dot");
+  const counter = document.getElementById("gal-counter");
+  const itemW = el.querySelector(".gal-item")?.offsetWidth || 260;
+  const idx = Math.round(el.scrollLeft / (itemW + 12));
+  dots.forEach((d,i) => d.classList.toggle("active", i===idx));
+  if(counter) counter.textContent = `${idx+1} / ${site.gallery.length}`;
 }
 function renderGalleryAdm() {
   const el=document.getElementById("gal-adm-grid"); if(!el) return;
@@ -913,6 +1064,8 @@ function showPage(p) {
   document.querySelectorAll(".page").forEach(el=>el.classList.remove("active"));
   document.getElementById("page-"+p).classList.add("active");
   window.scrollTo({top:0,behavior:"smooth"});
+  // Update nav active state
+  document.querySelectorAll(".nav-links a").forEach(a=>a.classList.remove("active"));
 }
 
 function toggleMobile() { document.getElementById("mobile-menu").classList.toggle("open"); }
@@ -972,6 +1125,10 @@ Part.prototype.draw=function(){ ctx.save(); ctx.globalAlpha=Math.max(0,this.alph
 function anim(){ ctx.clearRect(0,0,canvas.width,canvas.height); if(parts.length<60) parts.push(new Part()); parts=parts.filter(p=>p.alpha>0); parts.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(anim); }
 window.addEventListener("resize",resize); resize(); anim();
 
+document.addEventListener("DOMContentLoaded", function() {
+  const galIn = document.getElementById("gal-in");
+  if(galIn) galIn.addEventListener("change", function() { uploadGallery(this); });
+});
 loadSite();
 </script>
 </body>
