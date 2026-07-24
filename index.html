@@ -722,25 +722,34 @@ const PRODUCTS = [
 let site = {promo:"", discounts:[], offers:[], gallery:[], prodImgs:{}, prices:{}};
 
 async function loadSite() {
-  const shared = await loadShared();
-  if(!shared) {
-    try { const r = await window.storage.get("mbegu-site-v2"); if(r) site = JSON.parse(r.value); } catch(e){}
-  }
+  await loadShared();
   applyPromo(); renderOffers(); renderGallery(); buildProductGrids(); buildPriceFields();
 }
+const JSONBIN_ID = "6a6388a5da38895dfe8a7fdc";
+const JSONBIN_KEY = "$2a$10$mvTPBcILzPbUJBIIvDWlQuPwTUSQ7e.2GxTobgSV6KllDhJLwyB2.";
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
+const JSONBIN_HEADERS = {
+  "Content-Type": "application/json",
+  "X-Master-Key": JSONBIN_KEY,
+  "X-Bin-Versioning": "false"
+};
+
 async function saveSite() {
-  try { 
-    await window.storage.set("mbegu-site-v2", JSON.stringify(site), true);
-  } catch(e){ 
-    try { await window.storage.set("mbegu-site-v2", JSON.stringify(site)); } catch(e2){}
-  }
+  try {
+    await fetch(JSONBIN_URL, {
+      method: "PUT",
+      headers: JSONBIN_HEADERS,
+      body: JSON.stringify(site)
+    });
+  } catch(e) { console.error("Save failed:", e); }
 }
 
 async function loadShared() {
   try {
-    const r = await window.storage.get("mbegu-site-v2", true);
-    if(r) { site = JSON.parse(r.value); return true; }
-  } catch(e){}
+    const res = await fetch(JSONBIN_URL, { headers: JSONBIN_HEADERS });
+    const data = await res.json();
+    if(data.record) { site = data.record; return true; }
+  } catch(e) { console.error("Load failed:", e); }
   return false;
 }
 
