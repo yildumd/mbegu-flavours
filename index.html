@@ -191,13 +191,30 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .form-note{font-size:0.75rem;color:var(--mid);text-align:center;margin-top:10px}
 
 /* ── GALLERY ── */
-.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
-  gap:10px;margin-top:20px}
-.gal-item{border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer}
+.gallery-wrap{position:relative;margin-top:20px}
+.gallery-grid{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;padding-bottom:12px;scrollbar-width:none}
+.gallery-grid::-webkit-scrollbar{display:none}
+.gal-item{flex:0 0 260px;height:260px;border-radius:8px;overflow:hidden;
+  cursor:pointer;scroll-snap-align:start;position:relative}
 .gal-item img{width:100%;height:100%;object-fit:cover;transition:transform 0.3s}
 .gal-item:hover img{transform:scale(1.05)}
 .gal-empty{text-align:center;padding:40px;color:var(--mid);font-size:0.88rem;
   border:1px dashed rgba(200,134,10,0.2);border-radius:8px}
+.gal-nav{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.gal-arrow{background:rgba(200,134,10,0.15);border:1px solid rgba(200,134,10,0.3);
+  color:var(--gold);width:38px;height:38px;border-radius:50%;cursor:pointer;
+  font-size:1.1rem;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;flex-shrink:0}
+.gal-arrow:hover{background:var(--gold);color:var(--brown)}
+.gal-dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex:1;padding:0 12px}
+.gal-dot{width:7px;height:7px;border-radius:50%;background:rgba(200,134,10,0.25);
+  cursor:pointer;transition:background 0.2s;flex-shrink:0}
+.gal-dot.active{background:var(--gold)}
+.gal-counter{font-size:0.78rem;color:var(--mid);white-space:nowrap}
+@media(max-width:600px){
+  .gal-item{flex:0 0 85vw;height:85vw}
+}
 
 /* ── STORY ── */
 .story-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
@@ -393,8 +410,16 @@ footer{background:#0E0500;padding:36px 24px 24px;
     <div class="container">
       <div class="eyebrow">Gallery</div>
       <h2 class="sec-title">From our factory</h2>
-      <div class="gallery-grid" id="gallery-grid">
-        <div class="gal-empty" style="grid-column:1/-1">Photos coming soon.</div>
+      <div class="gallery-wrap">
+        <div class="gallery-grid" id="gallery-grid">
+          <div class="gal-empty">Photos coming soon.</div>
+        </div>
+        <div class="gal-nav" id="gal-nav" style="display:none">
+          <button class="gal-arrow" onclick="galScroll(-1)">&#8592;</button>
+          <div class="gal-dots" id="gal-dots"></div>
+          <span class="gal-counter" id="gal-counter"></span>
+          <button class="gal-arrow" onclick="galScroll(1)">&#8594;</button>
+        </div>
       </div>
     </div>
   </section>
@@ -748,7 +773,16 @@ async function loadShared() {
   try {
     const res = await fetch(JSONBIN_URL, { headers: JSONBIN_HEADERS });
     const data = await res.json();
-    if(data.record) { site = data.record; return true; }
+    if(data.record) {
+      const defaults = {promo:"", discounts:[], offers:[], gallery:[], productImgs:{}, prices:{}};
+      site = Object.assign(defaults, data.record);
+      if(!site.prices) site.prices = {};
+      if(!site.productImgs) site.productImgs = {};
+      if(!site.gallery) site.gallery = [];
+      if(!site.offers) site.offers = [];
+      if(!site.discounts) site.discounts = [];
+      return true;
+    }
   } catch(e) { console.error("Load failed:", e); }
   return false;
 }
@@ -972,9 +1006,48 @@ async function uploadGallery(inp) {
 }
 function deleteGalleryImg(id) { site.gallery=site.gallery.filter(g=>g.id!==id); saveSite(); renderGallery(); renderGalleryAdm(); }
 function renderGallery() {
-  const el=document.getElementById("gallery-grid");
-  if(!site.gallery.length){el.innerHTML=`<div class="gal-empty" style="grid-column:1/-1">Photos coming soon.</div>`;return;}
-  el.innerHTML=site.gallery.map(g=>`<div class="gal-item" onclick="openLightbox('${g.src}')"><img src="${g.src}" alt="${g.name}" loading="lazy"/></div>`).join("");
+  const el = document.getElementById("gallery-grid");
+  const nav = document.getElementById("gal-nav");
+  const dots = document.getElementById("gal-dots");
+  const counter = document.getElementById("gal-counter");
+  if(!site.gallery.length) {
+    el.innerHTML = `<div class="gal-empty">Photos coming soon.</div>`;
+    if(nav) nav.style.display = "none";
+    return;
+  }
+  el.innerHTML = site.gallery.map((g,i) =>
+    `<div class="gal-item" onclick="openLightbox('${g.src}')">
+      <img src="${g.src}" alt="${g.name}" loading="lazy"/>
+    </div>`
+  ).join("");
+  if(nav) nav.style.display = "flex";
+  if(dots) dots.innerHTML = site.gallery.map((_,i) =>
+    `<div class="gal-dot${i===0?' active':''}" onclick="galGoTo(${i})"></div>`
+  ).join("");
+  if(counter) counter.textContent = `1 / ${site.gallery.length}`;
+  el.addEventListener("scroll", updateGalNav, {passive:true});
+}
+
+function galScroll(dir) {
+  const el = document.getElementById("gallery-grid");
+  const itemW = el.querySelector(".gal-item")?.offsetWidth || 260;
+  el.scrollBy({left: dir * (itemW + 12), behavior:"smooth"});
+}
+
+function galGoTo(i) {
+  const el = document.getElementById("gallery-grid");
+  const itemW = el.querySelector(".gal-item")?.offsetWidth || 260;
+  el.scrollTo({left: i * (itemW + 12), behavior:"smooth"});
+}
+
+function updateGalNav() {
+  const el = document.getElementById("gallery-grid");
+  const dots = document.querySelectorAll(".gal-dot");
+  const counter = document.getElementById("gal-counter");
+  const itemW = el.querySelector(".gal-item")?.offsetWidth || 260;
+  const idx = Math.round(el.scrollLeft / (itemW + 12));
+  dots.forEach((d,i) => d.classList.toggle("active", i===idx));
+  if(counter) counter.textContent = `${idx+1} / ${site.gallery.length}`;
 }
 function renderGalleryAdm() {
   const el=document.getElementById("gal-adm-grid"); if(!el) return;
