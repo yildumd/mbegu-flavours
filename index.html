@@ -864,7 +864,7 @@ function renderOffersAdm() {
     <button class="adm-del" onclick="deleteOffer(${o.id})">Delete</button></div>`).join("");
 }
 
-function getPrice(prodId,size) { if(!site.prices) site.prices = {};
+function getPrice(prodId,size) { if(!site||!site.prices){if(!site)site={};site.prices={};} if(!site.prices) site.prices = {};
   if(!site.prices) site.prices = {};
   return site.prices[prodId+"_"+size] || PRODUCTS.find(p=>p.id===prodId)?.prices[size] || "";
 }
@@ -915,7 +915,7 @@ function waOrderLink(prodId) {
   return `https://wa.me/${WA}?text=${msg}`;
 }
 
-function buildProductCard(p, forShop=false) { if(!site.prices) site.prices = {};
+function buildProductCard(p, forShop=false) { if(!site||!site.prices){if(!site)site={};site.prices={};} if(!site.prices) site.prices = {};
   if(!site.prices) site.prices = {};
   const price50=getPrice(p.id,"50g"), price100=getPrice(p.id,"100g");
   const hasImg=site.prodImgs[p.id];
