@@ -721,30 +721,27 @@ const PRODUCTS = [
 
 let site = {promo:"", discounts:[], offers:[], gallery:[], prodImgs:{}, prices:{}};
 
-async function fetchCloudinaryGallery() {
-  try {
-    const res = await fetch(
-      `https://res.cloudinary.com/${CLOUD_NAME}/image/list/mbegu_flavours.json`
-    );
-    if(!res.ok) return;
-    const data = await res.json();
-    if(data.resources && data.resources.length) {
-      site.gallery = data.resources.map(r => ({
-        id: r.public_id,
-        src: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${r.public_id}.${r.format}`,
-        name: r.public_id
-      }));
-    }
-  } catch(e) { console.log("Cloudinary fetch:", e); }
-}
-
 async function loadSite() {
-  try { const r = await window.storage.get("mbegu-site-v2"); if(r) site = JSON.parse(r.value); } catch(e){}
-  await fetchCloudinaryGallery();
+  const shared = await loadShared();
+  if(!shared) {
+    try { const r = await window.storage.get("mbegu-site-v2"); if(r) site = JSON.parse(r.value); } catch(e){}
+  }
   applyPromo(); renderOffers(); renderGallery(); buildProductGrids(); buildPriceFields();
 }
 async function saveSite() {
-  try { await window.storage.set("mbegu-site-v2", JSON.stringify(site)); } catch(e){}
+  try { 
+    await window.storage.set("mbegu-site-v2", JSON.stringify(site), true);
+  } catch(e){ 
+    try { await window.storage.set("mbegu-site-v2", JSON.stringify(site)); } catch(e2){}
+  }
+}
+
+async function loadShared() {
+  try {
+    const r = await window.storage.get("mbegu-site-v2", true);
+    if(r) { site = JSON.parse(r.value); return true; }
+  } catch(e){}
+  return false;
 }
 
 function applyPromo() {
