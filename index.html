@@ -656,9 +656,9 @@ footer{background:#0E0500;padding:36px 24px 24px;
         <!-- GALLERY -->
         <div class="adm-sec" id="adm-gallery">
           <h4 style="color:var(--gold);font-size:0.9rem;margin-bottom:12px">Gallery Photos</h4>
-          <div class="upload-area" onclick="document.getElementById('gal-in').click()">
-            <input type="file" id="gal-in" accept="image/*" multiple style="display:none" onchange="uploadGallery(this)"/>
-            📸 Upload photos (multiple allowed, max 2MB each)
+          <div class="upload-area" id="gal-upload-area" onclick="document.getElementById('gal-in').click()">
+            <input type="file" id="gal-in" accept="image/*" multiple style="display:none"/>
+            📸 Click to upload photos (multiple allowed)
           </div>
           <div id="gal-adm-grid" class="img-grid" style="margin-top:10px"></div>
           <div id="gal-ok" class="ok-msg"></div>
@@ -685,11 +685,14 @@ async function uploadToCloudinary(file) {
   fd.append("file", file);
   fd.append("upload_preset", UPLOAD_PRESET);
   fd.append("folder", "mbegu_flavours");
+  console.log("Sending to Cloudinary — cloud:", CLOUD_NAME, "preset:", UPLOAD_PRESET);
   const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
     method: "POST", body: fd
   });
   const data = await res.json();
-  if(!data.secure_url) throw new Error("Upload failed");
+  console.log("Cloudinary response:", data);
+  if(data.error) throw new Error(data.error.message);
+  if(!data.secure_url) throw new Error("No URL returned from Cloudinary");
   return data.secure_url;
 }
 
@@ -718,8 +721,26 @@ const PRODUCTS = [
 
 let site = {promo:"", discounts:[], offers:[], gallery:[], prodImgs:{}, prices:{}};
 
+async function fetchCloudinaryGallery() {
+  try {
+    const res = await fetch(
+      `https://res.cloudinary.com/${CLOUD_NAME}/image/list/mbegu_flavours.json`
+    );
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data.resources && data.resources.length) {
+      site.gallery = data.resources.map(r => ({
+        id: r.public_id,
+        src: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${r.public_id}.${r.format}`,
+        name: r.public_id
+      }));
+    }
+  } catch(e) { console.log("Cloudinary fetch:", e); }
+}
+
 async function loadSite() {
   try { const r = await window.storage.get("mbegu-site-v2"); if(r) site = JSON.parse(r.value); } catch(e){}
+  await fetchCloudinaryGallery();
   applyPromo(); renderOffers(); renderGallery(); buildProductGrids(); buildPriceFields();
 }
 async function saveSite() {
@@ -913,20 +934,35 @@ async function uploadProdImg(inp, id) {
 
 async function uploadGallery(inp) {
   const files = Array.from(inp.files);
+  if(!files.length) return;
   const okEl = document.getElementById("gal-ok");
+  const area = document.getElementById("gal-upload-area");
+  okEl.style.color = "#C8860A";
   okEl.textContent = `Uploading ${files.length} photo(s) to Cloudinary...`;
+  if(area) area.textContent = "Uploading — please wait...";
   let done = 0;
   for(const f of files) {
     try {
+      console.log("Uploading to Cloudinary:", f.name, f.size);
       const url = await uploadToCloudinary(f);
+      console.log("Success:", url);
       site.gallery.push({id: Date.now()+done, src: url, name: f.name});
       done++;
       okEl.textContent = `Uploaded ${done} of ${files.length}...`;
-    } catch(e) { console.error("Failed:", f.name); }
+    } catch(e) {
+      console.error("Upload failed for:", f.name, e);
+      okEl.style.color = "#FF6040";
+      okEl.textContent = `Upload failed: ${e.message}. Check console for details.`;
+    }
   }
   saveSite(); renderGallery(); renderGalleryAdm();
-  okEl.textContent = `✓ ${done} photo(s) saved to Cloudinary`;
-  setTimeout(() => okEl.textContent = "", 4000);
+  if(area) area.textContent = "📸 Click to upload photos (multiple allowed)";
+  if(done > 0) {
+    okEl.style.color = "#4CAF7D";
+    okEl.textContent = `✓ ${done} photo(s) saved to Cloudinary permanently`;
+  }
+  setTimeout(() => okEl.textContent = "", 5000);
+  inp.value = "";
 }
 function deleteGalleryImg(id) { site.gallery=site.gallery.filter(g=>g.id!==id); saveSite(); renderGallery(); renderGalleryAdm(); }
 function renderGallery() {
@@ -1006,6 +1042,10 @@ Part.prototype.draw=function(){ ctx.save(); ctx.globalAlpha=Math.max(0,this.alph
 function anim(){ ctx.clearRect(0,0,canvas.width,canvas.height); if(parts.length<60) parts.push(new Part()); parts=parts.filter(p=>p.alpha>0); parts.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(anim); }
 window.addEventListener("resize",resize); resize(); anim();
 
+document.addEventListener("DOMContentLoaded", function() {
+  const galIn = document.getElementById("gal-in");
+  if(galIn) galIn.addEventListener("change", function() { uploadGallery(this); });
+});
 loadSite();
 </script>
 </body>
