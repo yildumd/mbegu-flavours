@@ -677,6 +677,8 @@ footer{background:#0E0500;padding:36px 24px 24px;
 <script>
 const WA = "";
 const ADMIN_PW = "mbegu2026";
+const CLOUD_NAME = "dyweczdw2";
+const UPLOAD_PRESET = "mbegu_uploads";
 
 const PRODUCTS = [
   {id:"psi0", name:"Mbegu Pepper Soup Spice", sub:"Authentic Nigerian Pepper Soup Blend",
@@ -742,11 +744,16 @@ function renderCodes() {
 }
 
 let pendingOfferImg=null;
-function previewOfferImg(inp) {
-  const f=inp.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=e=>{ pendingOfferImg=e.target.result;
-    document.getElementById("so-img-prev").innerHTML=`<img src="${e.target.result}" style="width:100%;max-height:140px;object-fit:cover;border-radius:4px;margin-top:6px"/>`;
-  }; r.readAsDataURL(f);
+async function previewOfferImg(inp) {
+  const f = inp.files[0]; if(!f) return;
+  document.getElementById("so-img-prev").innerHTML = `<p style="color:var(--gold);font-size:0.82rem">Uploading image...</p>`;
+  try {
+    const url = await uploadToCloudinary(f);
+    pendingOfferImg = url;
+    document.getElementById("so-img-prev").innerHTML = `<img src="${url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:4px;margin-top:6px"/>`;
+  } catch(e) {
+    document.getElementById("so-img-prev").innerHTML = `<p style="color:#FF6040;font-size:0.82rem">Upload failed. Try again.</p>`;
+  }
 }
 function addOffer() {
   const title=document.getElementById("so-title").value.trim(); if(!title) return;
@@ -878,21 +885,47 @@ function buildProdImgFields() {
       </div>
     </div>`).join("");
 }
-function uploadProdImg(inp,id) {
-  const f=inp.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=e=>{ site.prodImgs[id]=e.target.result; saveSite(); buildProductGrids(); buildProdImgFields(); }; r.readAsDataURL(f);
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", UPLOAD_PRESET);
+  fd.append("folder", "mbegu_flavours");
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: "POST", body: fd
+  });
+  const data = await res.json();
+  return data.secure_url;
 }
 
-function uploadGallery(inp) {
-  const files=Array.from(inp.files); let done=0;
-  const valid=files.filter(f=>f.size<=2*1024*1024);
-  if(valid.length<files.length) alert("Some files skipped — max 2MB each.");
-  valid.forEach(f=>{ const r=new FileReader(); r.onload=e=>{
-    site.gallery.push({id:Date.now()+done,src:e.target.result,name:f.name}); done++;
-    if(done===valid.length){ saveSite(); renderGallery(); renderGalleryAdm();
-      document.getElementById("gal-ok").textContent=`✓ ${done} photo(s) uploaded`;
-      setTimeout(()=>document.getElementById("gal-ok").textContent="",2000); }
-  }; r.readAsDataURL(f); });
+async function uploadProdImg(inp, id) {
+  const f = inp.files[0]; if(!f) return;
+  const btn = inp.closest(".upload-area");
+  if(btn) btn.textContent = "Uploading...";
+  try {
+    const url = await uploadToCloudinary(f);
+    site.prodImgs[id] = url;
+    saveSite(); buildProductGrids(); buildProdImgFields();
+  } catch(e) { alert("Upload failed. Check your internet and try again."); }
+  if(btn) btn.textContent = "📸 Replace product image";
+}
+
+async function uploadGallery(inp) {
+  const files = Array.from(inp.files);
+  const okEl = document.getElementById("gal-ok");
+  okEl.textContent = `Uploading ${files.length} photo(s)...`;
+  let done = 0;
+  for(const f of files) {
+    try {
+      const url = await uploadToCloudinary(f);
+      site.gallery.push({id: Date.now()+done, src: url, name: f.name});
+      done++;
+    } catch(e) {
+      console.error("Failed to upload", f.name);
+    }
+  }
+  saveSite(); renderGallery(); renderGalleryAdm();
+  okEl.textContent = `✓ ${done} photo(s) uploaded to Cloudinary`;
+  setTimeout(() => okEl.textContent = "", 3000);
 }
 function deleteGalleryImg(id) { site.gallery=site.gallery.filter(g=>g.id!==id); saveSite(); renderGallery(); renderGalleryAdm(); }
 function renderGallery() {
